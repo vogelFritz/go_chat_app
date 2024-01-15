@@ -1,10 +1,15 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"net"
 	"os"
+
+	"github.com/go-sql-driver/mysql"
 )
+
+var db *sql.DB
 
 const (
 	SERVER_TYPE = "tcp"
@@ -14,11 +19,21 @@ const (
 )
 
 func main() {
+	dbInit()
 	server := startServer()
 	defer server.Close()
 	fmt.Println("Listening on " + ADDRESS)
 	fmt.Println("Waiting for client...")
 	waitForClients(server)
+}
+
+func dbInit() {
+	cfg := mysql.Config{
+		Net:    "tcp",
+		Addr:   ADDRESS,
+		DBName: "messages",
+	}
+	sql.Open("mysql", cfg.FormatDSN())
 }
 
 func startServer() net.Listener {
