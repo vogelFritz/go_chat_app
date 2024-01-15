@@ -10,15 +10,11 @@ const (
 	SERVER_TYPE = "tcp"
 	SERVER_HOST = "localhost"
 	SERVER_PORT = "8080"
+	ADDRESS     = SERVER_HOST + ":" + SERVER_PORT
 )
 
 func main() {
-	const ADDRESS = SERVER_HOST + ":" + SERVER_PORT
-	server, err := net.Listen(SERVER_TYPE, ADDRESS)
-	if err != nil {
-		fmt.Println("Error listening: ", err.Error())
-		os.Exit(1)
-	}
+	server := startServer()
 	defer server.Close()
 	fmt.Println("Listening on " + ADDRESS)
 	fmt.Println("Waiting for client...")
@@ -34,13 +30,31 @@ func main() {
 
 }
 
+func startServer() net.Listener {
+	server, err := net.Listen(SERVER_TYPE, ADDRESS)
+	if err != nil {
+		fmt.Println("Error listening: ", err.Error())
+		os.Exit(1)
+	}
+	return server
+}
+
 func processClient(connection net.Conn) {
+	receivedMessage := readMessage(connection)
+	for receivedMessage != "f" {
+		connection.Write([]byte("Thanks! Got your message:" + receivedMessage))
+		receivedMessage = readMessage(connection)
+	}
+	connection.Close()
+}
+
+func readMessage(connection net.Conn) string {
 	buffer := make([]byte, 1024)
 	mLen, err := connection.Read(buffer)
 	if err != nil {
 		fmt.Println("Error reading: ", err.Error())
 	}
-	fmt.Println("Received: ", string(buffer[:mLen]))
-	_, err = connection.Write([]byte("Thanks! Got your message:" + string(buffer[:mLen])))
-	connection.Close()
+	receivedMessage := string(buffer[:mLen])
+	fmt.Println("Received: ", receivedMessage)
+	return receivedMessage
 }

@@ -20,18 +20,23 @@ func main() {
 
 func chatLoop(connection net.Conn) {
 	var message string
-	for {
-		fmt.Print("Write your message here (f to finish): ")
-		_, err := fmt.Scanf("%s", &message)
-		for err != nil {
-			fmt.Println("Error with the message: ", err.Error())
-			_, err = fmt.Scanf("%s", &message)
-		}
-		if message == "f" {
-			break
-		}
+	message = getMessageFromUser()
+	sendMessage(message, connection)
+	for message != "f" {
+		message = getMessageFromUser()
 		sendMessage(message, connection)
 	}
+}
+
+func getMessageFromUser() string {
+	var message string
+	fmt.Print("Write your message here (f to finish): ")
+	_, err := fmt.Scanln(&message)
+	for err != nil {
+		fmt.Println("Error with the message: ", err.Error())
+		_, err = fmt.Scanln(&message)
+	}
+	return message
 }
 
 func sendMessage(message string, connection net.Conn) {
