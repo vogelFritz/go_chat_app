@@ -18,6 +18,14 @@ func main() {
 	defer connection.Close()
 }
 
+func establishConnection() net.Conn {
+	connection, err := net.Dial(SERVER_TYPE, ADDRESS)
+	if err != nil {
+		panic(err)
+	}
+	return connection
+}
+
 func chatLoop(connection net.Conn) {
 	var message string
 	message = getMessageFromUser()
@@ -47,12 +55,4 @@ func sendMessage(message string, connection net.Conn) {
 		fmt.Println("Error reading: ", err.Error())
 	}
 	fmt.Println("Received: ", string(buffer[:mLen]))
-}
-
-func establishConnection() net.Conn {
-	connection, err := net.Dial(SERVER_TYPE, ADDRESS)
-	if err != nil {
-		panic(err)
-	}
-	return connection
 }
