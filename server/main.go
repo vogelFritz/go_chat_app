@@ -3,10 +3,9 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"net"
 	"os"
-
-	"github.com/go-sql-driver/mysql"
 )
 
 var db *sql.DB
@@ -28,12 +27,14 @@ func main() {
 }
 
 func dbInit() {
-	cfg := mysql.Config{
-		Net:    "tcp",
-		Addr:   ADDRESS,
-		DBName: "messages",
+	os.Remove("sqlite-database.db")
+	file, err := os.Create("sqlite-database.db")
+	if err != nil {
+		log.Fatal(err.Error())
 	}
-	sql.Open("mysql", cfg.FormatDSN())
+	file.Close()
+	db, _ = sql.Open("sqlite3", "/sqlite-database.db")
+
 }
 
 func startServer() net.Listener {
