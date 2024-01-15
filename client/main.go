@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net"
-	"os"
 )
 
 const (
@@ -23,16 +22,20 @@ func chatLoop(connection net.Conn) {
 	var message string
 	for {
 		fmt.Print("Write your message here (f to finish): ")
-		fmt.Scanf("%v", message)
+		_, err := fmt.Scanf("%s", &message)
+		for err != nil {
+			fmt.Println("Error with the message: ", err.Error())
+			_, err = fmt.Scanf("%s", &message)
+		}
 		if message == "f" {
-			os.Exit(1)
+			break
 		}
 		sendMessage(message, connection)
 	}
 }
 
 func sendMessage(message string, connection net.Conn) {
-	_, err := connection.Write([]byte(message))
+	connection.Write([]byte(message))
 	buffer := make([]byte, 1024)
 	mLen, err := connection.Read(buffer)
 	if err != nil {
