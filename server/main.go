@@ -6,6 +6,8 @@ import (
 	"log"
 	"net"
 	"os"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var db *sql.DB
@@ -19,6 +21,7 @@ const (
 
 func main() {
 	dbInit()
+	defer db.Close()
 	server := startServer()
 	defer server.Close()
 	fmt.Println("Listening on " + ADDRESS)
@@ -33,8 +36,40 @@ func dbInit() {
 		log.Fatal(err.Error())
 	}
 	file.Close()
-	db, _ = sql.Open("sqlite3", "/sqlite-database.db")
+	db, _ = sql.Open("sqlite3", "sqlite-database.db")
 
+	createTable(db)
+
+	err = db.Ping()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+}
+
+func createTable(db *sql.DB) {
+	createMessageTableSql := `CREATE TABLE messages (
+		"id" integer NOT NULL PRIMARY KEY autoincrement,
+		"emisorName" CHAR(50) NOT NULL,
+		"message" CHAR(255)
+	);`
+	statement, err := db.Prepare(createMessageTableSql)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	statement.Exec()
+}
+
+func insertMessage(emisorName string, message string) {
+	insertMessageSql := `INSERT INTO messages (emisorName, message) VALUES(?, ?)`
+	statement, err := db.Prepare(insertMessageSql)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	_, err = statement.Exec(emisorName, message)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 }
 
 func startServer() net.Listener {
@@ -63,6 +98,7 @@ func listenToClient(connection net.Conn) {
 	fmt.Println("Received: ", receivedMessage)
 	for receivedMessage != "f" {
 		connection.Write([]byte("Thanks! Got your message:" + receivedMessage))
+		insertMessage("vogel", receivedMessage)
 		receivedMessage = readMessage(connection)
 	}
 	connection.Write([]byte("Aufwiedersehen"))
