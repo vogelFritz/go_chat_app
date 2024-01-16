@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"net"
 	"os"
@@ -39,9 +40,10 @@ func chatLoop(connection net.Conn) {
 }
 
 func getMessageFromUser() string {
-	var message string
+	reader := bufio.NewReader(os.Stdin)
 	fmt.Print("Write your message here (f to finish): ")
-	_, err := fmt.Scanln(&message)
+	message, err := reader.ReadString('\n')
+	message = message[:len(message)-1]
 	for err != nil {
 		fmt.Println("Error with the message: ", err.Error())
 		_, err = fmt.Scanln(&message)
