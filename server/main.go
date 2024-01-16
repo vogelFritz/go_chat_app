@@ -97,12 +97,28 @@ func listenToClient(connection net.Conn) {
 	receivedMessage := readMessage(connection)
 	fmt.Println("Received: ", receivedMessage)
 	for receivedMessage != "f" {
-		connection.Write([]byte("Thanks! Got your message:" + receivedMessage))
 		insertMessage("vogel", receivedMessage)
+		sendRefreshedChat(connection)
 		receivedMessage = readMessage(connection)
 	}
 	connection.Write([]byte("Aufwiedersehen"))
 	connection.Close()
+}
+
+func sendRefreshedChat(connection net.Conn) {
+	var chat string
+	row, err := db.Query("SELECT emisorName, message FROM messages")
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	defer row.Close()
+	for row.Next() {
+		var emisorName string
+		var message string
+		row.Scan(&emisorName, &message)
+		chat += emisorName + ": " + message + "\n"
+	}
+	connection.Write([]byte(chat))
 }
 
 func readMessage(connection net.Conn) string {

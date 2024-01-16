@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"net"
+	"os"
+	"os/exec"
 )
 
 const (
@@ -54,5 +56,12 @@ func sendMessage(message string, connection net.Conn) {
 	if err != nil {
 		fmt.Println("Error reading: ", err.Error())
 	}
-	fmt.Println("Received: ", string(buffer[:mLen]))
+	clearScreen()
+	fmt.Println(string(buffer[:mLen]))
+}
+
+func clearScreen() {
+	cmd := exec.Command("clear")
+	cmd.Stdout = os.Stdout
+	cmd.Run()
 }
