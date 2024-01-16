@@ -11,12 +11,14 @@ import (
 )
 
 var db *sql.DB
+var connections [MAX_CLIENTS]net.Conn
 
 const (
 	SERVER_TYPE = "tcp"
 	SERVER_HOST = "localhost"
 	SERVER_PORT = "8080"
 	ADDRESS     = SERVER_HOST + ":" + SERVER_PORT
+	MAX_CLIENTS = 10
 )
 
 func main() {
@@ -82,30 +84,33 @@ func startServer() net.Listener {
 }
 
 func waitForClients(server net.Listener) {
+	var connIndex int = -1
 	for {
 		connection, err := server.Accept()
+		connIndex++
+		connections[connIndex] = connection
 		if err != nil {
 			fmt.Println("Error accepting: ", err.Error())
 			os.Exit(1)
 		}
 		fmt.Println("client connected")
-		go listenToClient(connection)
+		go listenToClient(connIndex)
 	}
 }
 
-func listenToClient(connection net.Conn) {
-	receivedMessage := readMessage(connection)
+func listenToClient(clientIndex int) {
+	receivedMessage := readMessage(connections[clientIndex])
 	fmt.Println("Received: ", receivedMessage)
 	for receivedMessage != "f" {
 		insertMessage("vogel", receivedMessage)
-		sendRefreshedChat(connection)
-		receivedMessage = readMessage(connection)
+		sendRefreshedChat()
+		receivedMessage = readMessage(connections[clientIndex])
 	}
-	connection.Write([]byte("Aufwiedersehen"))
-	connection.Close()
+	connections[clientIndex].Write([]byte("Aufwiedersehen"))
+	connections[clientIndex].Close()
 }
 
-func sendRefreshedChat(connection net.Conn) {
+func sendRefreshedChat() {
 	var chat string
 	row, err := db.Query("SELECT emisorName, message FROM messages")
 	if err != nil {
@@ -118,7 +123,9 @@ func sendRefreshedChat(connection net.Conn) {
 		row.Scan(&emisorName, &message)
 		chat += emisorName + ": " + message + "\n"
 	}
-	connection.Write([]byte(chat))
+	for i := 0; connections[i] != nil; i++ {
+		connections[i].Write([]byte(chat))
+	}
 }
 
 func readMessage(connection net.Conn) string {

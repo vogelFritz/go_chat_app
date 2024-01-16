@@ -31,6 +31,7 @@ func establishConnection() net.Conn {
 
 func chatLoop(connection net.Conn) {
 	var message string
+	go waitForUpdates(connection)
 	message = getMessageFromUser()
 	sendMessage(message, connection)
 	for message != "f" {
@@ -53,13 +54,19 @@ func getMessageFromUser() string {
 
 func sendMessage(message string, connection net.Conn) {
 	connection.Write([]byte(message))
-	buffer := make([]byte, 1024)
-	mLen, err := connection.Read(buffer)
-	if err != nil {
-		fmt.Println("Error reading: ", err.Error())
+
+}
+
+func waitForUpdates(connection net.Conn) {
+	for {
+		buffer := make([]byte, 1024)
+		mLen, err := connection.Read(buffer)
+		if err != nil {
+			fmt.Println("Error reading: ", err.Error())
+		}
+		clearScreen()
+		fmt.Println(string(buffer[:mLen]))
 	}
-	clearScreen()
-	fmt.Println(string(buffer[:mLen]))
 }
 
 func clearScreen() {
