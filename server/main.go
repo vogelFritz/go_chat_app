@@ -11,7 +11,7 @@ import (
 )
 
 var db *sql.DB
-var connections [MAX_CLIENTS]net.Conn
+var clients [MAX_CLIENTS]Client
 
 const (
 	SERVER_TYPE = "tcp"
@@ -20,6 +20,11 @@ const (
 	ADDRESS     = SERVER_HOST + ":" + SERVER_PORT
 	MAX_CLIENTS = 10
 )
+
+type Client struct {
+	connection net.Conn
+	name       string
+}
 
 func main() {
 	dbInit()
@@ -88,7 +93,7 @@ func waitForClients(server net.Listener) {
 	for {
 		connection, err := server.Accept()
 		connIndex++
-		connections[connIndex] = connection
+		clients[connIndex].registerClient(connection)
 		if err != nil {
 			fmt.Println("Error accepting: ", err.Error())
 			os.Exit(1)
@@ -99,17 +104,23 @@ func waitForClients(server net.Listener) {
 }
 
 func listenToClient(clientIndex int) {
+	client := clients[clientIndex]
 	sendRefreshedChat()
-	receivedMessage := readMessage(connections[clientIndex])
+	receivedMessage := readMessage(client.connection)
 	fmt.Println("Received: ", receivedMessage)
 	for receivedMessage != "f" {
-		insertMessage("vogel", receivedMessage)
+		insertMessage(client.name, receivedMessage)
 		sendRefreshedChat()
-		receivedMessage = readMessage(connections[clientIndex])
+		receivedMessage = readMessage(client.connection)
 		fmt.Println("Received: ", receivedMessage)
 	}
-	connections[clientIndex].Write([]byte("Aufwiedersehen"))
-	connections[clientIndex].Close()
+	client.connection.Write([]byte("Aufwiedersehen"))
+	client.connection.Close()
+}
+
+func (c *Client) registerClient(connection net.Conn) {
+	c.connection = connection
+	c.name = readClientName(c.connection)
 }
 
 func sendRefreshedChat() {
@@ -125,9 +136,18 @@ func sendRefreshedChat() {
 		row.Scan(&emisorName, &message)
 		chat += emisorName + ": " + message + "\n"
 	}
-	for i := 0; connections[i] != nil; i++ {
-		connections[i].Write([]byte(chat))
+	for i := 0; clients[i].connection != nil; i++ {
+		clients[i].connection.Write([]byte(chat))
 	}
+}
+
+func readClientName(connection net.Conn) string {
+	buffer := make([]byte, 1024)
+	mLen, err := connection.Read(buffer)
+	if err != nil {
+		fmt.Println("Error reading name: ", err.Error())
+	}
+	return string(buffer[:mLen])
 }
 
 func readMessage(connection net.Conn) string {

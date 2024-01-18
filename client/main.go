@@ -17,6 +17,7 @@ const (
 
 func main() {
 	connection := establishConnection()
+	register(connection)
 	chatLoop(connection)
 	defer connection.Close()
 }
@@ -27,6 +28,12 @@ func establishConnection() net.Conn {
 		panic(err)
 	}
 	return connection
+}
+
+func register(connection net.Conn) {
+	fmt.Print("What is your name? ==> ")
+	name := getMessageFromUser()
+	sendMessage(name, connection)
 }
 
 func chatLoop(connection net.Conn) {
