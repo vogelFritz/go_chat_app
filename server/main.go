@@ -99,12 +99,14 @@ func waitForClients(server net.Listener) {
 }
 
 func listenToClient(clientIndex int) {
+	sendRefreshedChat()
 	receivedMessage := readMessage(connections[clientIndex])
 	fmt.Println("Received: ", receivedMessage)
 	for receivedMessage != "f" {
 		insertMessage("vogel", receivedMessage)
 		sendRefreshedChat()
 		receivedMessage = readMessage(connections[clientIndex])
+		fmt.Println("Received: ", receivedMessage)
 	}
 	connections[clientIndex].Write([]byte("Aufwiedersehen"))
 	connections[clientIndex].Close()

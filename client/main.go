@@ -32,6 +32,7 @@ func establishConnection() net.Conn {
 func chatLoop(connection net.Conn) {
 	var message string
 	go waitForUpdates(connection)
+	fmt.Print("Write your message here (f to finish): ")
 	message = getMessageFromUser()
 	sendMessage(message, connection)
 	for message != "f" {
@@ -42,7 +43,6 @@ func chatLoop(connection net.Conn) {
 
 func getMessageFromUser() string {
 	reader := bufio.NewReader(os.Stdin)
-	fmt.Print("Write your message here (f to finish): ")
 	message, err := reader.ReadString('\n')
 	message = message[:len(message)-1]
 	for err != nil {
@@ -66,6 +66,7 @@ func waitForUpdates(connection net.Conn) {
 		}
 		clearScreen()
 		fmt.Println(string(buffer[:mLen]))
+		fmt.Print("Write your message here (f to finish): ")
 	}
 }
 
