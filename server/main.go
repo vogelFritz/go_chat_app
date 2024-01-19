@@ -159,6 +159,7 @@ func readMessage(connection net.Conn) string {
 	mLen, err := connection.Read(buffer)
 	if err != nil {
 		fmt.Println("Error reading: ", err.Error())
+		return "f"
 	}
 	receivedMessage := string(buffer[:mLen])
 	return receivedMessage
