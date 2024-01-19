@@ -26,6 +26,11 @@ type Client struct {
 	name       string
 }
 
+func (c *Client) registerClient(connection net.Conn) {
+	c.connection = connection
+	c.name = readClientName(c.connection)
+}
+
 func main() {
 	dbInit()
 	defer db.Close()
@@ -77,6 +82,10 @@ func insertMessage(emisorName string, message string) {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+	err = statement.Close()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 }
 
 func startServer() net.Listener {
@@ -116,11 +125,6 @@ func listenToClient(clientIndex int) {
 	}
 	client.connection.Write([]byte("Aufwiedersehen"))
 	client.connection.Close()
-}
-
-func (c *Client) registerClient(connection net.Conn) {
-	c.connection = connection
-	c.name = readClientName(c.connection)
 }
 
 func sendRefreshedChat() {

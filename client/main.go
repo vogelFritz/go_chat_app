@@ -38,7 +38,8 @@ func register(connection net.Conn) {
 
 func chatLoop(connection net.Conn) {
 	var message string
-	go waitForUpdates(connection)
+	finishSignal := make(chan struct{}) // unary channel
+	go waitForUpdates(connection, finishSignal)
 	fmt.Print("Write your message here (f to finish): ")
 	message = getMessageFromUser()
 	sendMessage(message, connection)
@@ -46,6 +47,8 @@ func chatLoop(connection net.Conn) {
 		message = getMessageFromUser()
 		sendMessage(message, connection)
 	}
+	finishSignal <- struct{}{}
+	<-finishSignal
 }
 
 func getMessageFromUser() string {
@@ -64,12 +67,22 @@ func sendMessage(message string, connection net.Conn) {
 
 }
 
-func waitForUpdates(connection net.Conn) {
+func waitForUpdates(connection net.Conn, finishSignal chan struct{}) {
+	done := false
+	go func() {
+		<-finishSignal
+		done = true
+	}()
 	for {
 		buffer := make([]byte, 1024)
 		mLen, err := connection.Read(buffer)
 		if err != nil {
 			fmt.Println("Error reading: ", err.Error())
+		}
+		if done {
+			fmt.Println(string(buffer[:mLen]))
+			finishSignal <- struct{}{}
+			return
 		}
 		clearScreen()
 		fmt.Println(string(buffer[:mLen]))
